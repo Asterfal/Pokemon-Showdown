@@ -215,7 +215,7 @@ exports.commands = {
 			if (!this.runBroadcast()) return;
 			Wisp.database.all("SELECT * FROM users WHERE lastSeen NOT NULL", (err, rows) => {
 				this.sendReplyBox("There have been " + rows.length + " user names recorded in this database.");
-				room.update();
+				if (room) room.update();
 			});
 			break;
 		default:
@@ -229,7 +229,7 @@ exports.commands = {
 			Wisp.lastSeen(userid, seen => {
 				if (!seen) return this.sendReplyBox(userName + ' has <font color=\"red\">never</font> been seen online on this server.');
 				this.sendReplyBox(userName + ' was last seen online on ' + moment(seen).format("MMMM Do YYYY, h:mm:ss A") + ' EST. (' + moment(seen).fromNow() + ')');
-				room.update();
+				if (room) room.update();
 			});
 			break;
 		}
@@ -241,7 +241,7 @@ exports.commands = {
 		if (!this.runBroadcast()) return;
 		Wisp.regdate(target, date => {
 			this.sendReplyBox(Wisp.nameColor(target, false) + (date ? " was registered on " + moment(date).format("dddd, MMMM DD, YYYY HH:mmA ZZ") : " is not registered."));
-			room.update();
+			if (room) room.update();
 		});
 	},
 
@@ -304,14 +304,15 @@ exports.commands = {
 			}).on('end', () => {
 				if (data.charAt(0) !== '[') {
 					this.sendReplyBox("Error retrieving definition for <b>" + Tools.escapeHTML(target) + "</b>.");
-					room.update();
+					if (room) room.update();
 					return;
 				}
 				data = JSON.parse(data);
 				let output = '<font color=#24678d><b>Definitions for ' + target + ':</b></font><br />';
 				if (!data[0]) {
 					this.sendReplyBox('No results for <b>"' + target + '"</b>.');
-					return room.update();
+					if (room) room.update();
+					return;
 				} else {
 					let count = 1;
 					for (let u in data) {
@@ -320,7 +321,8 @@ exports.commands = {
 						count++;
 					}
 					this.sendReplyBox(output);
-					return room.update();
+					if (room) room.update();
+					return;
 				}
 			});
 		});
@@ -348,23 +350,26 @@ exports.commands = {
 			}).on('end', () => {
 				if (data.charAt(0) !== '{') {
 					this.sendReplyBox("Error retrieving definition for <b>" + Tools.escapeHTML(target) + "</b>.");
-					room.update();
+					if (room) room.update();
 					return;
 				}
 				data = JSON.parse(data);
 				let definitions = data['list'];
 				if (data['result_type'] === 'no_results') {
 					this.sendReplyBox('No results for <b>"' + Tools.escapeHTML(target) + '"</b>.');
-					return room.update();
+					if (room) room.update();
+					return;
 				} else {
 					if (!definitions[0]['word'] || !definitions[0]['definition']) {
 						self.sendReplyBox('No results for <b>"' + Tools.escapeHTML(target) + '"</b>.');
-						return room.update();
+						if (room) room.update();
+						return;
 					}
 					let output = '<b>' + Tools.escapeHTML(definitions[0]['word']) + ':</b> ' + Tools.escapeHTML(definitions[0]['definition']).replace(/\r\n/g, '<br />').replace(/\n/g, ' ');
 					if (output.length > 400) output = output.slice(0, 400) + '...';
 					this.sendReplyBox(output);
-					return room.update();
+					if (room) room.update();
+					return;
 				}
 			});
 		});
@@ -1006,15 +1011,6 @@ exports.commands = {
 	},
 	wssbhelp: ["/Wssb [staff member's name] - displays data for a staffmon's movepool, custom move, and custom ability."],
 
-	roombanlist: function (target, room, user) {
-		if (!this.can('roomban', null, room)) return false;
-		if (!this.runBroadcast()) return;
-		if (Object.keys(room.bannedUsers).length < 1) return this.sendReplyBox("This room has no banned users.");
-		let users = [];
-		for (let u in room.bannedUsers) users.push(Wisp.nameColor(u, true));
-		this.sendReplyBox("Roombanned users in " + Tools.escapeHTML(room.title) + ":<br />" + users.join(', '));
-	},
-
 	staffdeclare: function (target, room, user) {
 		if (!this.can('declare', null, room)) return false;
 		if (!target) return this.parse('/help staffdeclare');
@@ -1122,6 +1118,34 @@ exports.commands = {
 		"/music set [user], [song link] - Sets a users profile music.",
 		"/music delete [user] - Deletes a users profile music.",
 	],
+
+	roombanlist: function (target, room, user) {
+		if (!this.can('ban', null, room)) return false;
+		if (!Punishments.roomUserids.get(room.id) || Punishments.roomUserids.get(room.id).size < 1) return this.sendReply("There's no banned users in this room.");
+		let users = {};
+		let output = '|raw|<div style="infobox infobox-limited"><center><u><b>Roombans in ' + Tools.escapeHTML(room.title) + '</b></u><br /><table border="1" cellspacing="0" cellpadding="5">';
+		output += '<tr><th>Name</th><th>Type</th><th>Expires</th><th>Reason</th></tr>';
+		Punishments.roomUserids.get(room.id).forEach((arr, ip) => {
+			if (users[arr[1]] || Date.now() >= arr[2]) return;
+			users[arr[1]] = {
+				type: arr[0],
+				expires: arr[2],
+				reason: (arr[3] ? Tools.escapeHTML(arr[3]) : 'N/A'),
+			};
+		});
+
+		let sorted = Object.keys(users).sort(function (a, b) {
+			return users[a].expires - users[b].expires;
+		});
+
+		for (let u in sorted) {
+			output += '<tr><td>' + Wisp.nameColor(sorted[u], true) + '</td><td>' + users[sorted[u]].type + '</td><td>' + moment(users[sorted[u]].expires).fromNow() +
+				'</td><td>' + users[sorted[u]].reason + '</td></tr>';
+		}
+
+		output += '</table></center></div>';
+		return this.sendReply(output);
+	},
 
 	banlist: function (target, room, user) {
 		if (!this.can('lock')) return false;
@@ -1314,7 +1338,7 @@ Object.assign(Wisp, {
 	setBackground: function (user, image) {
 		let userid = toId(user);
 		Wisp.database.run("UPDATE users SET background=$background WHERE userid=$userid;", {$background: image, $userid: userid}, function (err) {
-			if (err) return console('setBackground 1: ' + err);
+			if (err) return console.log('setBackground 1: ' + err);
 			Wisp.database.run("INSERT OR IGNORE INTO users (userid,background) VALUES ($userid, $background)", {$userid: userid, $background: image}, function (err) {
 				if (err) return console.log("setBackground 2: " + err);
 			});
@@ -1332,7 +1356,7 @@ Object.assign(Wisp, {
 	setMusic: function (user, music) {
 		let userid = toId(user);
 		Wisp.database.run("UPDATE users SET music=$music WHERE userid=$userid;", {$music: music, $userid: userid}, function (err) {
-			if (err) return console('setMusic 1: ' + err);
+			if (err) return console.log('setMusic 1: ' + err);
 			Wisp.database.run("INSERT OR IGNORE INTO users (userid, music) VALUES ($userid, $music)", {$userid: userid, $music: music}, function (err) {
 				if (err) return console.log("setMusic 2: " + err);
 			});
@@ -1344,7 +1368,7 @@ Object.assign(Wisp, {
 		if (userid.match(/^guest[0-9]/)) return false;
 		let date = Date.now();
 		Wisp.database.run("UPDATE users SET lastSeen=$date, name=$name WHERE userid=$userid;", {$date: date, $name: user, $userid: userid}, function (err) {
-			if (err) return console('updateSeen 1: ' + err);
+			if (err) return console.log('updateSeen 1: ' + err);
 			Wisp.database.run("INSERT OR IGNORE INTO users (userid, name, lastSeen) VALUES ($userid, $name, $date)", {$userid: userid, $name: user, $date: date}, function (err) {
 				if (err) return console.log("updateSeen 2: " + err);
 			});
