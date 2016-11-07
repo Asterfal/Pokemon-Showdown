@@ -67,12 +67,21 @@ class Giveaway {
 			}
 		}
 	}
+<<<<<<< HEAD
 	checkExcluded(user) {
 		for (let ip in this.excluded) {
 			if (user.latestIp === ip) return true;
 			if (this.excluded[ip] in user.prevNames) return true;
 		}
 		return false;
+=======
+
+	generateWindow(rightSide) {
+		return `<p style="text-align:center;font-size:14pt;font-weight:bold;margin-bottom:2px;">It's giveaway time!</p>` +
+			`<p style="text-align:center;font-size:7pt;">Giveaway started by ${Chat.escapeHTML(this.host.name)}</p>` +
+			`<table style="margin-left:auto;margin-right:auto;"><tr><td style="text-align:center;width:45%">${this.sprite}<p style="font-weight:bold;">Giver: ${this.giver}</p>${Chat.escapeHTML(this.prize)}</td>` +
+			`<td style="text-align:center;width:45%">${rightSide}</td></tr></table><p style="text-align:center;font-size:7pt;font-weight:bold;"><u>Note:</u> Please do not join if you don't have a 3DS and a copy of Pok&eacute;mon XY or ORAS.</p>`;
+>>>>>>> upstream/master
 	}
 }
 class QuestionGiveaway extends Giveaway {
@@ -139,9 +148,17 @@ class QuestionGiveaway extends Giveaway {
 			} else {
 				this.phase = 'ended';
 				this.clearTimer();
+<<<<<<< HEAD
 				this.send('<div style="' + GIVEAWAY_DISPLAY + '"><font style="' + GIVEAWAY_TITLE_FONT + '"><strong>' + Tools.escapeHTML(this.winner.name) + '</strong> won ' + Tools.escapeHTML(this.giver.name) + '\'s giveaway for a <strong>' + Tools.escapeHTML(this.prize) + '</strong>! Congratulations!</font><br>' + '<font style="' + GIVEAWAY_SMALL_FONT + '">Correct answer(s): ' + this.answers.join(', ') + '</font></div>');
 				if (this.winner.connected) this.winner.popup('You have won the giveaway. PM **' + Tools.escapeHTML(this.giver.name) + '** to claim your prize!');
 				if (this.giver.connected) this.giver.popup(Tools.escapeHTML(this.winner.name) + " has won your question giveaway!");
+=======
+				this.room.modlog(`${this.winner.name} won ${this.giver.name}'s giveaway for a "${this.prize}"`);
+				this.send(this.generateWindow(`<p style="text-align:center;font-size:12pt;"><b>${Chat.escapeHTML(this.winner.name)}</b> won the giveaway! Congratulations!</p>` +
+				`<p style="text-align:center;">${this.question}<br/>Correct answer${checkPlural(this.answers)}: ${this.answers.join(', ')}</p>`));
+				if (this.winner.connected) this.winner.popup(`You have won the giveaway. PM **${Chat.escapeHTML(this.giver.name)}** to claim your prize!`);
+				if (this.giver.connected) this.giver.popup(`${Chat.escapeHTML(this.winner.name)} has won your question giveaway!`);
+>>>>>>> upstream/master
 			}
 		}
 		delete this.room.giveaway;
@@ -222,11 +239,21 @@ class LotteryGiveaway extends Giveaway {
 			this.room.send("The giveaway was forcibly ended.");
 		} else {
 			this.phase = 'ended';
+<<<<<<< HEAD
 			this.send('<div style="' + GIVEAWAY_DISPLAY + '"><font style="' + GIVEAWAY_TITLE_FONT + '">Lottery Draw</font><br><font style="' + GIVEAWAY_FLAVOR_FONT + '">' + Object.keys(this.joined).length + " users joined " + Tools.escapeHTML(this.giver.name) + "'s giveaway for: <strong>" + Tools.escapeHTML(this.prize) + "</strong><br/>" + '<font style="' + GIVEAWAY_SMALL_FONT + '">Our lucky winner' + (this.winners.length > 1 ? "s" : "") + ": <strong>" + Tools.escapeHTML(this.winners.reduce((prev, cur, index, array) => prev + cur.name + (index === array.length - 1 ? "" : ', '), '')) + "!</strong> Congratulations!</font>");
+=======
+			let winnerNames = this.winners.map(winner => winner.name).join(', ');
+			this.room.modlog(`${winnerNames} won ${this.giver.name}'s giveaway for "${this.prize}"`);
+			this.send(this.generateWindow(`<p style="text-align:center;font-size:10pt;font-weight:bold;">Lottery Draw</p><p style="text-align:center;">${Object.keys(this.joined).length} users joined the giveaway.<br/>Our lucky winner${checkPlural(this.winners)}: <b>${Chat.escapeHTML(winnerNames)}!</b> Congratulations!</p>`));
+>>>>>>> upstream/master
 			for (let i = 0; i < this.winners.length; i++) {
 				if (this.winners[i].connected) this.winners[i].popup("You have won the lottery giveaway! PM **" + this.giver.name + "** to claim your prize!");
 			}
+<<<<<<< HEAD
 			if (this.giver.connected) this.giver.popup("The following users have won your lottery giveaway:\n" + Tools.escapeHTML(this.winners.reduce((prev, cur, index, array) => prev + cur.name + (index === array.length - 1 ? "" : ', '), '')));
+=======
+			if (this.giver.connected) this.giver.popup(`The following users have won your lottery giveaway:\n${Chat.escapeHTML(winnerNames)}`);
+>>>>>>> upstream/master
 		}
 		delete this.room.giveaway;
 	}
@@ -272,8 +299,13 @@ let commands = {
 	},
 	guessanswer: 'guess',
 	guess: function (target, room, user) {
+<<<<<<< HEAD
 		if (room.id !== 'marketplace') return this.errorReply("This command can only be used in the Marketplace room.");
 		if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
+=======
+		if (room.id !== 'wifi') return this.errorReply("This command can only be used in the Wi-Fi room.");
+		if (!this.canTalk()) return;
+>>>>>>> upstream/master
 		if (!room.giveaway) return this.errorReply("There is no giveaway going on at the moment.");
 		if (room.giveaway.type !== 'question') return this.errorReply("This is not a question giveaway.");
 		room.giveaway.guessAnswer(user, target);
@@ -309,8 +341,13 @@ let commands = {
 	joinlotto: 'join',
 	joinlottery: 'join',
 	join: function (target, room, user, conn, cmd) {
+<<<<<<< HEAD
 		if (room.id !== 'marketplace') return this.errorReply("This command can only be used in the Marketplace room.");
 		if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
+=======
+		if (room.id !== 'wifi') return this.errorReply("This command can only be used in the Wi-Fi room.");
+		if (!this.canTalk()) return;
+>>>>>>> upstream/master
 		let giveaway = room.giveaway;
 		if (!giveaway) return this.errorReply("There is no giveaway going on at the moment.");
 		if (giveaway.type !== 'lottery') return this.errorReply("This is not a lottery giveaway.");

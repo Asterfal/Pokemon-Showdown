@@ -67,6 +67,7 @@ class Poll {
 		let count = 0;
 		let output = '<div style="border-top-right-radius: 20px; border-top-left-radius: 20px;"><table cellspacing="0" style="background: rgba(245, 245, 245, 0.7); width: 100%; border: 1px solid #79330A; border-bottom: none; border-top-right-radius: 20px; border-top-left-radius: 20px;"><tr><td colspan="4" class="poll-td" style="background: rgba(255, 174, 127, 0.8); background: linear-gradient(rgba(255, 193, 156, 0.8), rgba(253, 153, 94, 0.8)); border-bottom: 1px solid #79330A; border-top-right-radius: 20px; border-top-left-radius: 20px; text-shadow: 0px 0px 2px #EEE; box-shadow: 1px 1px 1px rgba(255, 255, 255, 0.8) inset, 0px 0px 1px rgba(0, 0, 0, 0.5) inset;"><span style="border: 1px solid #3B763B; color: #2D5A2D; border-radius: 4px; padding: 0 3px; box-shadow: 0px 0px 2px rgba(255, 255, 255, 0.8);"><i class="fa fa-bar-chart"></i> Poll</span> <strong style="font-size: 11pt; color: #512106;">' + this.getQuestionMarkup() + '</strong><br /></td></tr>';
 		this.options.forEach((option, number) => {
+<<<<<<< HEAD
 			count++;
 			if (count === 1) output += "<tr>";
 			output += '<td class="poll-td"><button style="border-radius: 20px; transition-duration: 0.5s; transition-timing-function: linear;" value="/poll vote ' + number + '" name="send" title="Vote for ' + number + '. ' + Tools.escapeHTML(option.name) + '"' + (option.void ? ' disabled' : '') + '>' + Tools.escapeHTML(option.name) + '</button></td>';
@@ -74,6 +75,9 @@ class Poll {
 				output += "</tr>";
 				count = 0;
 			}
+=======
+			output += '<div style="margin-top: 5px"><button class="button" value="/poll vote ' + number + '" name="send" title="Vote for ' + number + '. ' + Chat.escapeHTML(option.name) + '">' + number + '. <strong>' + this.getOptionMarkup(option) + '</strong></button></div>';
+>>>>>>> upstream/master
 		});
 		output += '</table></div><div style="background: rgba(245, 245, 245, 0.7); padding: 8px 0px; text-align: center; border: 1px solid #79330A; border-top: none; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px;"><button value="/poll results" name="send" title="View results - you will not be able to vote after viewing results" class="poll-results-btn" style="border-radius: 20px; transition-duration: 0.5s; transition-timing-function: linear;"><small>(View results)</small></button></div>';
 
@@ -108,12 +112,12 @@ class Poll {
 
 	getQuestionMarkup() {
 		if (this.supportHTML) return this.question;
-		return Tools.escapeHTML(this.question);
+		return Chat.escapeHTML(this.question);
 	}
 
 	getOptionMarkup(option) {
 		if (this.supportHTML) return option.name;
-		return Tools.escapeHTML(option.name);
+		return Chat.escapeHTML(option.name);
 	}
 
 	update(force) {
@@ -223,7 +227,7 @@ exports.commands = {
 
 			if (!this.can('minigame', null, room)) return false;
 			if (supportHTML && !this.can('declare', null, room)) return false;
-			if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
+			if (!this.canTalk()) return;
 			if (room.poll) return this.errorReply("There is already a poll in progress in this room.");
 			if (params.length < 3) return this.errorReply("Not enough arguments for /poll new.");
 
@@ -396,7 +400,7 @@ exports.commands = {
 		stop: 'end',
 		end: function (target, room, user) {
 			if (!this.can('minigame', null, room)) return false;
-			if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
+			if (!this.canTalk()) return;
 			if (!room.poll) return this.errorReply("There is no poll running in this room.");
 			if (room.poll.timeout) clearTimeout(room.poll.timeout);
 
@@ -455,5 +459,5 @@ exports.commands = {
 };
 
 process.nextTick(() => {
-	CommandParser.multiLinePattern.register('/poll (new|create|htmlcreate) ');
+	Chat.multiLinePattern.register('/poll (new|create|htmlcreate) ');
 });

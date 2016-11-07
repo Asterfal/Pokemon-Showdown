@@ -24,7 +24,6 @@ class RoomSettings {
 		this.sameCommand = true;
 	}
 	updateSetting(command) {
-		CommandParser.parse('/' + command, this.room, this.user, this.connection);
 		this.sameCommand = false;
 		this.generateDisplay();
 	}
@@ -73,7 +72,7 @@ class RoomSettings {
 		return modjoinOutput.join(" ");
 	}
 	stretching() {
-		if (!this.user.can('editroom', null, this.room)) return "<button " + DISABLED + ">" + (this.room.filterStretching ? this.room.filterStretching : 'off') + "</button>";
+		if (!this.user.can('editroom', null, this.room)) return "<button " + DISABLED + ">" + (this.room.filterStretching ? 'filter stretching' : 'off') + "</button>";
 		if (this.room.filterStretching) {
 			return '<button class="button" name="send" value="/roomsetting stretchfilter off">off</button> <button ' + DISABLED + '>filter stretching</button>';
 		} else {
@@ -81,7 +80,7 @@ class RoomSettings {
 		}
 	}
 	capitals() {
-		if (!this.user.can('editroom', null, this.room)) return "<button " + DISABLED + ">" + (this.room.filterCaps ? this.room.filterCaps : 'off') + "</button>";
+		if (!this.user.can('editroom', null, this.room)) return "<button " + DISABLED + ">" + (this.room.filterCaps ? 'filter capitals' : 'off') + "</button>";
 		if (this.room.filterCaps) {
 			return '<button class="button" name="send" value="/roomsetting capsfilter off">off</button> <button ' + DISABLED + '>filter capitals</button>';
 		} else {
@@ -107,16 +106,18 @@ class RoomSettings {
 		return slowchatOutput.join(" ");
 	}
 	tourStatus() {
-		if (!this.user.can('tournamentsmanagement', null, this.room)) return "<button " + DISABLED + ">" + (this.room.toursEnabled ? 'drivers+' : 'RO only') + "</button>";
+		if (!this.user.can('tournamentsmanagement', null, this.room)) return "<button " + DISABLED + ">" + (this.room.toursEnabled === true ? '@' : this.room.toursEnabled === '%' ? '%' : '#') + "</button>";
 
-		if (this.room.toursEnabled) {
-			return '<button class="button" name="send" value="/roomsetting tournament disable">RO only</button> <button ' + DISABLED + '>drivers+</button>';
+		if (this.room.toursEnabled === true) {
+			return '<button class="button" name="send" value="/roomsetting tournament enable %">%</button> <button ' + DISABLED + '>@</button> <button class="button" name="send" value="/roomsetting tournament disable">#</button>';
+		} else if (this.room.toursEnabled === '%') {
+			return '<button ' + DISABLED + '>%</button> <button class="button" name="send" value="/roomsetting tournament enable @">@</button> <button class="button" name="send" value="/roomsetting tournament disable">#</button>';
 		} else {
-			return '<button ' + DISABLED + '>RO only</button> <button class="button" name="send" value="/roomsetting tournament enable">drivers+</button> ';
+			return '<button class="button" name="send" value="/roomsetting tournament enable %">%</button> <button class="button" name="send" value="/roomsetting tournament enable @">@</button> <button ' + DISABLED + '>#</button>';
 		}
 	}
 	generateDisplay(user, room, connection) {
-		let output = '<div class="infobox">Room Settings for ' + Tools.escapeHTML(this.room.title) + '<br />';
+		let output = '<div class="infobox">Room Settings for ' + Chat.escapeHTML(this.room.title) + '<br />';
 		output += "<b>Modchat:</b> <br />" + this.modchat() + "<br />";
 		output += "<b>Modjoin:</b> <br />" + this.modjoin() + "<br />";
 		output += "<b>Stretch filter:</b> <br />" + this.stretching() + "<br />";
@@ -139,6 +140,7 @@ exports.commands = {
 			room.update();
 			settings.generateDisplay(user, room, connection);
 		} else {
+			this.parse(`/${target}`);
 			settings.updateSetting(target);
 		}
 	},
@@ -149,7 +151,7 @@ exports.commands = {
 			const modchatSetting = (room.modchat || "OFF");
 			return this.sendReply(`Moderated chat is currently set to: ${modchatSetting}`);
 		}
-		if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
+		if (!this.canTalk()) return;
 		if (!this.can('modchat', null, room)) return false;
 
 		if (room.modchat && room.modchat.length <= 1 && Config.groupsranking.indexOf(room.modchat) > 1 && !user.can('modchatall', null, room)) {
@@ -197,7 +199,7 @@ exports.commands = {
 		if (!room.modchat) {
 			this.add("|raw|<div class=\"broadcast-blue\"><b>Moderated chat was disabled!</b><br />Anyone may talk now.</div>");
 		} else {
-			const modchatSetting = Tools.escapeHTML(room.modchat);
+			const modchatSetting = Chat.escapeHTML(room.modchat);
 			this.add("|raw|<div class=\"broadcast-red\"><b>Moderated chat was set to " + modchatSetting + "!</b><br />Only users of rank " + modchatSetting + " and higher can talk.</div>");
 		}
 		if (room.battle && !room.modchat && !user.can('modchat')) room.requestModchat(null);
@@ -259,7 +261,7 @@ exports.commands = {
 			if (target === '+') {
 				this.add(`|raw|<div class="broadcast-red"><b>This room is now invite only!</b><br />Users must be rank + or invited with <code>/invite</code> to join</div>`);
 			} else {
-				this.add(`|raw|<div class="broadcast-red"><b>Moderated join was set to ${target}!</b><br />Only users of rank ${target} and higher can talk.</div>`);
+				this.add(`|raw|<div class="broadcast-red"><b>Moderated join was set to ${target}!</b><br />Only users of rank ${target} and higher can join.</div>`);
 			}
 			this.addModCommand(`${user.name} set modjoin to ${target}.`);
 		} else {
@@ -282,7 +284,7 @@ exports.commands = {
 			const slowchatSetting = (room.slowchat || "OFF");
 			return this.sendReply(`Slow chat is currently set to: ${slowchatSetting}`);
 		}
-		if (!this.canTalk()) return this.errorReply(`You cannot do this while unable to talk.`);
+		if (!this.canTalk()) return;
 		if (!this.can('modchat', null, room)) return false;
 
 		let targetInt = parseInt(target);
@@ -318,7 +320,7 @@ exports.commands = {
 			const stretchSetting = (room.filterStretching ? "ON" : "OFF");
 			return this.sendReply(`This room's stretch filter is currently: ${stretchSetting}`);
 		}
-		if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
+		if (!this.canTalk()) return;
 		if (!this.can('editroom', null, room)) return false;
 
 		if (target === 'enable' || target === 'on') {
@@ -347,7 +349,7 @@ exports.commands = {
 			const capsSetting = (room.filterCaps ? "ON" : "OFF");
 			return this.sendReply(`This room's caps filter is currently: ${capsSetting}`);
 		}
-		if (!this.canTalk()) return this.errorReply(`You cannot do this while unable to talk.`);
+		if (!this.canTalk()) return;
 		if (!this.can('editroom', null, room)) return false;
 
 		if (target === 'enable' || target === 'on' || target === 'true') {
@@ -443,7 +445,7 @@ exports.commands = {
 		},
 
 		list: function (target, room, user) {
-			if (!this.can('ban', null, room)) return false;
+			if (!this.can('mute', null, room)) return false;
 
 			if (!room.banwords) return this.sendReply("This room has no banned phrases.");
 
@@ -456,5 +458,5 @@ exports.commands = {
 	},
 	banwordhelp: ["/banword add [words] - Adds the comma-separated list of phrases (& or ~ can also input regex) to the banword list of the current room. Requires: # & ~",
 					"/banword delete [words] - Removes the comma-separated list of phrases from the banword list. Requires: # & ~",
-					"/banword list - Shows the list of banned words in the current room. Requires: @ * # & ~"],
+					"/banword list - Shows the list of banned words in the current room. Requires: % @ * # & ~"],
 };
